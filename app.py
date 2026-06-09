@@ -13,7 +13,7 @@ st.markdown("""
     header {visibility: hidden;}
     .block-container {padding-top: 1rem; padding-bottom: 1rem;}
     </style>
-    """, unsafe_allow_index=True)
+    """, unsafe_allow_html=True)
 
 st.title("🎓 Your Friendly NCERT Screen Tutor")
 
