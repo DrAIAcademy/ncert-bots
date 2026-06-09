@@ -1,17 +1,23 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import os
 
 st.set_page_config(page_title="NCERT AI Tutor", page_icon="🎓")
 st.title("🎓 Your Friendly NCERT Screen Tutor")
 
-# 1. Aapki API key yahan set kar di gayi hai
-api_key = "AQ.Ab8RN6J4jRIkD5HeH1mn7m-yAeYBBobxeRa57io2aG8EBAmRSQ"
+# 1. Check Streamlit Secrets for API Key
+api_key = "AQ.Ab8RN6KItY6rPYMitr0-RfyIRSXZbPgh_Qrgy4wav64TBvlwxg"
+if "GEMINI_API_KEY" in st.secrets:
+    api_key = st.secrets["GEMINI_API_KEY"]
+else:
+    api_key = st.sidebar.text_input("Enter Gemini API Key:", type="password")
 
 if api_key:
-    genai.configure(api_key=api_key)
+    # New SDK Client Initialize karne ka tarika
+    client = genai.Client(api_key=api_key)
     
-    # 2. Strict UTF-8 Encoding to read Hindi and English properly
+    # 2. Read Textbook Data
     ncert_knowledge = ""
     if os.path.exists("ncert_data.txt"):
         try:
@@ -20,41 +26,32 @@ if api_key:
         except Exception as e:
             st.error(f"File padhne mein dikkat aai: {e}")
 
-    # Debugging check
     if not ncert_knowledge:
-        st.warning("⚠️ Aapki 'ncert_data.txt' file khali hai ya read nahi ho paa rahi hai!")
+        st.warning("⚠️ 'ncert_data.txt' file khali hai ya read nahi ho paa rahi hai!")
     
-    # 3. Flexible System Instructions
+    # 3. System Instructions
     system_instruction = f"""
     You are an expert, patient school tutor specialized in the NCERT curriculum. 
-    Here is the textbook data for your reference:
+    Here is the textbook data for reference:
     ---
     {ncert_knowledge}
     ---
-    
     RULES:
-    1. Look at the textbook data provided above. If the student's question is mentioned or related to this data, answer it completely and clearly.
-    2. Do NOT be too strict. If the text contains the concept, explain it beautifully in simple words.
-    3. If the student asks for a summary, read the entire provided text and generate a clean summary with bullet points.
-    4. Only say "I'm sorry, that topic isn't covered in this chapter" if the student asks something completely random (like cricket, movies, or coding) which has 0% connection with the textbook text.
-    5. Keep your tone encouraging and warm.
+    1. Base explanations directly on the provided textbook text.
+    2. If the student asks for a summary, generate a beautiful summary using bullet points.
+    3. Keep your tone warm and clear.
     """
 
-    # 4. Initialize the chat memory with gemini-2.5-flash
+    # 4. Initialize Chat History in Session State
     if "messages" not in st.session_state:
         st.session_state.messages = []
-        model = genai.GenerativeModel(
-            model_name="gemini-2.5-flash",
-            system_instruction=system_instruction
-        )
-        st.session_state.chat = model.start_chat(history=[])
 
     # Display past chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # 5. Handle new questions
+    # 5. Handle Questions using the new SDK syntax
     if user_question := st.chat_input("Ask a question from your NCERT book..."):
         with st.chat_message("user"):
             st.markdown(user_question)
@@ -62,8 +59,25 @@ if api_key:
 
         with st.chat_message("assistant"):
             try:
-                response = st.session_state.chat.send_message(user_question)
+                # Naye SDK ke mutabik chat session ya direct generate content
+                # Hum pure history ko context bana kar bhej rahe hain taaki memory bani rahe
+                history_context = ""
+                for msg in st.session_state.messages[:-1]:
+                    history_context += f"{msg['role']}: {msg['content']}\n"
+                
+                full_prompt = f"{history_context}user: {user_question}"
+
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction
+                    )
+                )
+                
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
                 st.error(f"Error: {e}")
+else:
+    st.info("Please enter your Gemini API Key in the sidebar or set it in Streamlit Secrets!")
