@@ -17,12 +17,15 @@ st.markdown("""
 
 st.title("🎓 Your Friendly NCERT Screen Tutor")
 
-# 1. Aapki AQ wali API Key seedhe yahan lock hai
-api_key = "AQ.Ab8RN6J4jRIkD5HeH1mn7m-yAeYBBobxeRa57io2aG8EBAmRSQ"
+# ==================== KANHA AUR KAISE KEY DALNI HAI ====================
+# Hum system ke background environment variable me direct key daal rahe hain.
+# Naye Google SDK ka yahi niyam hai AQ format keys ke liye.
+os.environ["GEMINI_API_KEY"] = "AQ.Ab8RN6J4jRIkD5HeH1mn7m-yAeYBBobxeRa57io2aG8EBAmRSQ"
+# =======================================================================
 
 try:
-    # Naye SDK mein direct api_key parameter pass karne ka sahi tarika
-    client = genai.Client(api_key=api_key)
+    # Client ko ab khali chhodna hai, kyunki wo upar wali line se key apne aap utha lega
+    client = genai.Client()
     
     # 2. Read Textbook Data
     ncert_knowledge = ""
