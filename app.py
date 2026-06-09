@@ -18,7 +18,7 @@ st.markdown("""
 st.title("🎓 Your Friendly NCERT Screen Tutor")
 
 # 1. System se API key uthana (Streamlit Secrets se automatic connect hoga)
-api_key = st.secrets.get("AQ.Ab8RN6J4jRIkD5HeH1mn7m-yAeYBBobxeRa57io2aG8EBAmRSQ", "")
+api_key = st.secrets.get("AQ.Ab8RN6J4jRIkD5HeH1mn7m-yAeYBBobxeRa57io2aG8EBAmRSQ","")
 
 if api_key:
     # Naye SDK ke liye environment variable set karna compulsory hai AQ keys ke liye
