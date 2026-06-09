@@ -5,7 +5,7 @@ import os
 
 st.set_page_config(page_title="NCERT AI Tutor", page_icon="🎓")
 
-# Custom CSS taaki interface bilkul saaf aur bina faltu margins ke dikhe (Embed karne ke liye best)
+# Custom CSS for Embed Look
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -17,13 +17,15 @@ st.markdown("""
 
 st.title("🎓 Your Friendly NCERT Screen Tutor")
 
-# 1. Aapki AQ wali API Key seedhe yahan lock kar di hai
-# (Aap chahein toh ise Streamlit Secrets se bhi connect rehne de sakte hain)
-api_key = "AQ.Ab8RN6KItY6rPYMitr0-RfyIRSXZbPgh_Qrgy4wav64TBvlwxg"
+# 1. System se API key uthana (Streamlit Secrets se automatic connect hoga)
+api_key = st.secrets.get("AQ.Ab8RN6KItY6rPYMitr0-RfyIRSXZbPgh_Qrgy4wav64TBvlwxg", "")
 
 if api_key:
-    # Client Initialize
-    client = genai.Client(api_key=api_key)
+    # Naye SDK ke liye environment variable set karna compulsory hai AQ keys ke liye
+    os.environ["GEMINI_API_KEY"] = api_key
+    
+    # Client initialize bina kisi parameter ke (yeh automatic env variable padh lega)
+    client = genai.Client()
     
     # 2. Read Textbook Data
     ncert_knowledge = ""
@@ -56,7 +58,7 @@ if api_key:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # 5. Handle Questions (Using the latest 3.5-flash model)
+    # 5. Handle Questions (Using 3.5-flash)
     if user_question := st.chat_input("Ask a question from your NCERT book..."):
         with st.chat_message("user"):
             st.markdown(user_question)
@@ -83,3 +85,5 @@ if api_key:
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
                 st.error(f"Error: {e}")
+else:
+    st.error("⚠️ GEMINI_API_KEY Streamlit Secrets mein nahi mili! Kripya Step 2 check karein.")
