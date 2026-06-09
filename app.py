@@ -4,17 +4,25 @@ from google.genai import types
 import os
 
 st.set_page_config(page_title="NCERT AI Tutor", page_icon="🎓")
+
+# Custom CSS taaki interface bilkul saaf aur bina faltu margins ke dikhe (Embed karne ke liye best)
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .block-container {padding-top: 1rem; padding-bottom: 1rem;}
+    </style>
+    """, unsafe_allow_index=True)
+
 st.title("🎓 Your Friendly NCERT Screen Tutor")
 
-# 1. Check Streamlit Secrets for API Key
+# 1. Aapki AQ wali API Key seedhe yahan lock kar di hai
+# (Aap chahein toh ise Streamlit Secrets se bhi connect rehne de sakte hain)
 api_key = "AQ.Ab8RN6KItY6rPYMitr0-RfyIRSXZbPgh_Qrgy4wav64TBvlwxg"
-if "GEMINI_API_KEY" in st.secrets:
-    api_key = st.secrets["GEMINI_API_KEY"]
-else:
-    api_key = st.sidebar.text_input("Enter Gemini API Key:", type="password")
 
 if api_key:
-    # New SDK Client Initialize karne ka tarika
+    # Client Initialize
     client = genai.Client(api_key=api_key)
     
     # 2. Read Textbook Data
@@ -24,11 +32,8 @@ if api_key:
             with open("ncert_data.txt", "r", encoding="utf-8") as f:
                 ncert_knowledge = f.read().strip()
         except Exception as e:
-            st.error(f"File padhne mein dikkat aai: {e}")
+            st.error(f"File read karne mein dikkat: {e}")
 
-    if not ncert_knowledge:
-        st.warning("⚠️ 'ncert_data.txt' file khali hai ya read nahi ho paa rahi hai!")
-    
     # 3. System Instructions
     system_instruction = f"""
     You are an expert, patient school tutor specialized in the NCERT curriculum. 
@@ -39,19 +44,19 @@ if api_key:
     RULES:
     1. Base explanations directly on the provided textbook text.
     2. If the student asks for a summary, generate a beautiful summary using bullet points.
-    3. Keep your tone warm and clear.
+    3. Keep your tone warm, encouraging, and clear.
     """
 
-    # 4. Initialize Chat History in Session State
+    # 4. Initialize Chat History
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Display past chat history
+    # Past chat history display
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # 5. Handle Questions using the new SDK syntax
+    # 5. Handle Questions (Using the latest 3.5-flash model)
     if user_question := st.chat_input("Ask a question from your NCERT book..."):
         with st.chat_message("user"):
             st.markdown(user_question)
@@ -59,8 +64,7 @@ if api_key:
 
         with st.chat_message("assistant"):
             try:
-                # Naye SDK ke mutabik chat session ya direct generate content
-                # Hum pure history ko context bana kar bhej rahe hain taaki memory bani rahe
+                # Making history context
                 history_context = ""
                 for msg in st.session_state.messages[:-1]:
                     history_context += f"{msg['role']}: {msg['content']}\n"
@@ -68,7 +72,7 @@ if api_key:
                 full_prompt = f"{history_context}user: {user_question}"
 
                 response = client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-3.5-flash',
                     contents=full_prompt,
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction
@@ -79,5 +83,3 @@ if api_key:
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
                 st.error(f"Error: {e}")
-else:
-    st.info("Please enter your Gemini API Key in the sidebar or set it in Streamlit Secrets!")
